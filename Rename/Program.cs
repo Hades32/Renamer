@@ -10,17 +10,16 @@ namespace Rename
     {
         static void Main(string[] args)
         {
-            if (args.Length != 2 && args.Length != 3 || (args.Length == 3 && args[2] != "-r"))
+            if (args.Length < 2)
             {
                 displayUsage();
                 return;
             }
             bool regexp = MyGlobalMethods.Contains(args,"-r");
             bool dirsToo = MyGlobalMethods.Contains(args, "-d");
+            bool notReal = MyGlobalMethods.Contains(args, "-t");
             string inPattern = args[0];
             string outPattern = args[1];
-            string outfile;
-            string shortFile;
 
             Regex inReg;
             Match match;
@@ -51,28 +50,28 @@ namespace Rename
 
             foreach (var file in Directory.GetFiles(Directory.GetCurrentDirectory()))
             {
-                Rename(outPattern, inReg, file);
+                Rename(outPattern, inReg, file, notReal);
             }
 
             if (dirsToo)
             {
                 foreach (var dir in Directory.GetDirectories(Directory.GetCurrentDirectory()))
                 {
-                    Rename(outPattern, inReg, dir);
+                    Rename(outPattern, inReg, dir, notReal);
                 }
             }
         }
 
-        private static void Rename(string outPattern, Regex inReg, string file)
+        private static void Rename(string outPattern, Regex inReg, string file, bool simulate)
         {
             string outfile;
             Match match;
             String shortFile = Path.GetFileName(file);
             if ((match = inReg.Match(shortFile)).Success)
             {
-                Console.Write("Trying to rename file ");
+                Console.Write("Trying to rename file '");
                 Console.Write(shortFile);
-                Console.Write(" to ");
+                Console.Write("' to '");
                 try
                 {
                     outfile = outPattern;
@@ -83,15 +82,16 @@ namespace Rename
                     Console.Write(outfile);
 
                     //Is suitable for Files, too. ??Is File.Move good for Dirs, too???
-                    Directory.Move(file, Path.Combine(Path.GetDirectoryName(file), outfile));
+                    if (!simulate)
+                        Directory.Move(file, Path.Combine(Path.GetDirectoryName(file), outfile));
 
-                    Console.WriteLine("\tSuccess");
+                    Console.WriteLine("' : Success");
                 }
                 catch
                 {
                     var oldCol = Console.ForegroundColor;
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("\tFailure");
+                    Console.WriteLine("' : FAIL");
                     Console.ForegroundColor = oldCol;
                 }
             }
@@ -104,6 +104,7 @@ namespace Rename
 @"rename InPattern OutPattern (-r) (-d)
     -r : full usage of RegExp in patterns
     -d : rename directories, too
+    -t : Test. No renamings.
 
 Examples:
     rename *.mp3 *.wav           : changes extension from MP3 to WAV
