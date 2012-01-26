@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ren2", "Rename\ren2.csproj", "{B81CD4DE-D807-4689-8AF0-5BDCEB962E0F}"
 EndProject
 Global

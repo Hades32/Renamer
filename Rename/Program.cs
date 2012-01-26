@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Rename
 {
@@ -15,7 +13,7 @@ namespace Rename
                 displayUsage();
                 return;
             }
-            bool regexp = MyGlobalMethods.Contains(args,"-r");
+            bool regexp = MyGlobalMethods.Contains(args, "-r");
             bool dirsToo = MyGlobalMethods.Contains(args, "-d");
             bool notReal = MyGlobalMethods.Contains(args, "-t");
             string inPattern = args[0];
@@ -48,21 +46,31 @@ namespace Rename
                 outPattern = MyGlobalMethods.ReplaceFirst(outPattern, "*", "\\" + i.ToString());
             }
 
+            int matches = 0;
+
             foreach (var file in Directory.GetFiles(Directory.GetCurrentDirectory()))
             {
-                Rename(outPattern, inReg, file, notReal);
+                if (Rename(outPattern, inReg, file, notReal))
+                    matches++;
             }
 
             if (dirsToo)
             {
                 foreach (var dir in Directory.GetDirectories(Directory.GetCurrentDirectory()))
                 {
-                    Rename(outPattern, inReg, dir, notReal);
+                    if (Rename(outPattern, inReg, dir, notReal))
+                        matches++;
                 }
+            }
+
+            if (matches == 0)
+            {
+                Console.WriteLine("Sorry, I couldn't find a file or directory matching '" + inReg.ToString() + "'");
+                Console.WriteLine("Remember that '^' is a escape character in DOS and you probably have to use '^^'.");
             }
         }
 
-        private static void Rename(string outPattern, Regex inReg, string file, bool simulate)
+        private static bool Rename(string outPattern, Regex inReg, string file, bool simulate)
         {
             string outfile;
             Match match;
@@ -94,23 +102,26 @@ namespace Rename
                     Console.WriteLine("' : FAIL");
                     Console.ForegroundColor = oldCol;
                 }
+                return match.Groups.Count > 0;
             }
+            return false;
         }
 
         static void displayUsage()
-        {   
+        {
             //TODO: Add path
             var usage =
-@"rename InPattern OutPattern (-r) (-d)
+@"Rename2 - Version 1.1
+ren2 InPattern OutPattern (-r) (-d)
     -r : full usage of RegExp in patterns
     -d : rename directories, too
     -t : Test. No renamings.
 
 Examples:
-    rename *.mp3 *.wav           : changes extension from MP3 to WAV
-    rename *.mp3 CD1_*.mp3       : addes CD1_ before every MP3
-    rename *xxx*.jpg \2xxx\1.jpg : switches start and end of the filename
-    rename .*(\d+).*\.mp3 \1.mp3 : renames all mp3s like *000*.mp3 to 000.mp3
+    ren2 *.mp3 *.wav           : changes extension from MP3 to WAV
+    ren2 *.mp3 CD1_*.mp3       : addes CD1_ before every MP3
+    ren2 *xxx*.jpg \2xxx\1.jpg : switches start and end of the filename
+    ren2 .*(\d+).*\.mp3 \1.mp3 : renames all mp3s like *000*.mp3 to 000.mp3
 ";
             Console.WriteLine(usage);
         }
