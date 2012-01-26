@@ -123,8 +123,19 @@ namespace Rename
 
                     //Is suitable for Files, too. ??Is File.Move good for Dirs, too???
                     if (!simulate)
-                        Directory.Move(file, Path.Combine(Path.GetDirectoryName(file), outfile));
-
+                    {
+                        var outPath = Path.Combine(Path.GetDirectoryName(file), outfile);
+                        if (file.Equals(outPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var tmpOut = outPath + ".ren2tmp";
+                            Directory.Move(file, tmpOut);
+                            Directory.Move(tmpOut, outPath);
+                        }
+                        else
+                        {
+                            Directory.Move(file, outPath);
+                        }
+                    }
                     Console.WriteLine("' : Success");
                 }
                 catch
