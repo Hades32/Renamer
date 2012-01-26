@@ -19,11 +19,16 @@ namespace Rename
             bool regexp = MyGlobalMethods.Contains(args, "-x");
             bool dirsToo = MyGlobalMethods.Contains(args, "-d");
             bool notReal = MyGlobalMethods.Contains(args, "-t");
+            bool caseSensitive = MyGlobalMethods.Contains(args, "-s");
             string inPattern = args[args.Length - 2];
             string outPattern = args[args.Length - 1];
 
             Regex inReg;
             RegexOptions regOpt = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript;
+            if (!caseSensitive)
+            {
+                regOpt |= RegexOptions.IgnoreCase;
+            }
             //RegExps
             if (regexp)
             {
@@ -74,7 +79,7 @@ namespace Rename
             int matches = 0;
             foreach (var file in Directory.GetFiles(curDir))
             {
-                if (Rename(inReg, outPattern, file, notReal))
+                if (rename(inReg, outPattern, file, notReal))
                     matches++;
             }
 
@@ -82,7 +87,7 @@ namespace Rename
             {
                 foreach (var dir in Directory.GetDirectories(curDir))
                 {
-                    if (Rename(inReg, outPattern, dir, notReal))
+                    if (rename(inReg, outPattern, dir, notReal))
                         matches++;
                 }
             }
@@ -91,13 +96,13 @@ namespace Rename
             {
                 foreach (var dir in Directory.GetDirectories(curDir))
                 {
-                    matches += startRename(inReg, outPattern, curDir, true, dirsToo, notReal);
+                    matches += startRename(inReg, outPattern, dir, true, dirsToo, notReal);
                 }
             }
             return matches;
         }
 
-        private static bool Rename(Regex inReg, string outPattern, string file, bool simulate)
+        private static bool rename(Regex inReg, string outPattern, string file, bool simulate)
         {
             string outfile;
             Match match;
@@ -140,8 +145,9 @@ namespace Rename
             //TODO: Add path
             var usage =
 @"Rename2 - Version 1.1
-ren2 InPattern OutPattern [-r] [-x] [-d]
+ren2 InPattern OutPattern [-r] [-x] [-d] [-s]
     -r : recurse into subdirectories
+    -s : case sensitive matching
     -x : full usage of RegExp in patterns
     -d : rename directories, too
     -t : Test. No renamings.
