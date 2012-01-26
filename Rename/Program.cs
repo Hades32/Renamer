@@ -8,19 +8,21 @@ namespace Rename
     {
         static void Main(string[] args)
         {
+            #region parse and check command line parameters
+
             if (args.Length < 2)
             {
                 displayUsage();
                 return;
             }
-            bool regexp = MyGlobalMethods.Contains(args, "-r");
+            bool recursive = MyGlobalMethods.Contains(args, "-r");
+            bool regexp = MyGlobalMethods.Contains(args, "-x");
             bool dirsToo = MyGlobalMethods.Contains(args, "-d");
             bool notReal = MyGlobalMethods.Contains(args, "-t");
-            string inPattern = args[0];
-            string outPattern = args[1];
+            string inPattern = args[args.Length - 2];
+            string outPattern = args[args.Length - 1];
 
             Regex inReg;
-            Match match;
             RegexOptions regOpt = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript;
             //RegExps
             if (regexp)
@@ -39,6 +41,10 @@ namespace Rename
                 inReg = new Regex(Regex.Escape(inPattern).Replace(@"\*", "(.*)"), regOpt);
             }
 
+            #endregion
+
+            #region build regex pattern
+
             int i = 0;
             while (outPattern.Contains("*"))
             {
@@ -46,22 +52,11 @@ namespace Rename
                 outPattern = MyGlobalMethods.ReplaceFirst(outPattern, "*", "\\" + i.ToString());
             }
 
-            int matches = 0;
+            #endregion
 
-            foreach (var file in Directory.GetFiles(Directory.GetCurrentDirectory()))
-            {
-                if (Rename(outPattern, inReg, file, notReal))
-                    matches++;
-            }
+            var curDir = Directory.GetCurrentDirectory();
 
-            if (dirsToo)
-            {
-                foreach (var dir in Directory.GetDirectories(Directory.GetCurrentDirectory()))
-                {
-                    if (Rename(outPattern, inReg, dir, notReal))
-                        matches++;
-                }
-            }
+            var matches = startRename(inReg, outPattern, curDir, recursive, dirsToo, notReal);
 
             if (matches == 0)
             {
@@ -70,7 +65,39 @@ namespace Rename
             }
         }
 
-        private static bool Rename(string outPattern, Regex inReg, string file, bool simulate)
+        /// <summary>
+        /// Renames files in a directory and optionally its subdirectories
+        /// </summary>
+        /// <returns>Number of file renames done</returns>
+        private static int startRename(Regex inReg, string outPattern, string curDir, bool recursive, bool dirsToo, bool notReal)
+        {
+            int matches = 0;
+            foreach (var file in Directory.GetFiles(curDir))
+            {
+                if (Rename(inReg, outPattern, file, notReal))
+                    matches++;
+            }
+
+            if (dirsToo)
+            {
+                foreach (var dir in Directory.GetDirectories(curDir))
+                {
+                    if (Rename(inReg, outPattern, dir, notReal))
+                        matches++;
+                }
+            }
+
+            if (recursive)
+            {
+                foreach (var dir in Directory.GetDirectories(curDir))
+                {
+                    matches += startRename(inReg, outPattern, curDir, true, dirsToo, notReal);
+                }
+            }
+            return matches;
+        }
+
+        private static bool Rename(Regex inReg, string outPattern, string file, bool simulate)
         {
             string outfile;
             Match match;
@@ -101,6 +128,7 @@ namespace Rename
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("' : FAIL");
                     Console.ForegroundColor = oldCol;
+                    Console.ResetColor();
                 }
                 return match.Groups.Count > 0;
             }
@@ -112,8 +140,9 @@ namespace Rename
             //TODO: Add path
             var usage =
 @"Rename2 - Version 1.1
-ren2 InPattern OutPattern (-r) (-d)
-    -r : full usage of RegExp in patterns
+ren2 InPattern OutPattern [-r] [-x] [-d]
+    -r : recurse into subdirectories
+    -x : full usage of RegExp in patterns
     -d : rename directories, too
     -t : Test. No renamings.
 
@@ -121,7 +150,7 @@ Examples:
     ren2 *.mp3 *.wav           : changes extension from MP3 to WAV
     ren2 *.mp3 CD1_*.mp3       : addes CD1_ before every MP3
     ren2 *xxx*.jpg \2xxx\1.jpg : switches start and end of the filename
-    ren2 .*(\d+).*\.mp3 \1.mp3 : renames all mp3s like *000*.mp3 to 000.mp3
+    ren2 -x .*(\d+).*\.mp3 \1.mp3 : renames all mp3s like *000*.mp3 to 000.mp3
 ";
             Console.WriteLine(usage);
         }
